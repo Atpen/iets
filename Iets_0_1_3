@@ -1,0 +1,264 @@
+import pygame
+import random
+import wx
+
+app = wx.App(False)
+width, height = wx.GetDisplaySize()
+
+#startwaarden variabelen display
+if height < 400:
+    balk = 5
+    size = 5
+    startdistance = 4
+    b_size = 2
+    b_speed = 5
+    maxspeed = 10
+else:
+    balk = 20
+    size = 20
+    startdistance = 15
+    b_size = 8
+    b_speed = 20
+    maxspeed = 40
+
+S_posP1x = (width / 2) - (size / 2) + random.randint(0, (width / 4)) - random.randint(0, (width / 4))
+S_posP1y = height - startdistance - size
+jumplimitP1 = height - 2*startdistance - size
+maxspeedP1 = maxspeed
+
+b_p1_size = b_size
+
+Topfield = height / 2 - balk
+PosBottomfield = height / 2 + balk
+Bottomfield = Topfield
+
+pygame.init()
+pygame.font.init()
+win = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Dual2.0")
+
+# startwaarden color
+
+color_BGt = (51, 0, 0)
+color_BGb = (0, 26, 51)
+color_P1 = (204, 0, 0)
+color_P1_b = (150, 0, 0)
+color_T1 = (0, 104, 102)
+color_T2 = (0, 26, 102)
+color_red = (204, 10, 10)
+
+#  startwaarden game
+
+run = True
+playsession = False
+uitleg = False
+menu = False
+game = False
+P1 = False
+Nmbr = False
+shotsession_p1 = False
+b_p1_count = 10
+b_p1_rangee = 30
+A_x_base = 0
+A_y_base = 5
+radius = 10
+
+# tekst
+
+fontA = pygame.font.SysFont('comicsans', 60 )
+fontb = pygame.font.SysFont('comicsans', 30 )
+
+
+#classes
+
+class Player:
+    def __init__(self, playernumber, posx, posy, AccelerationX, AccelerationY, color, size):
+        self.number = playernumber
+        self.posx = posx
+        self.posy = posy
+        self.sizex = size
+        self.sizey = size
+        self.color = color
+        self.Ax = AccelerationX
+        self.Ay = AccelerationY
+        self.jumpsession = True
+        self.fall = True
+
+    def move(self,Vx,Vy):
+        self.posx += Vx
+        self.posy += Vy
+        self.b_posx = self.posx + 0.5*self.sizex
+
+class projectile:
+    def __init__(self, posx, posy, size, color, angle, speed, life):
+        self.posx = posx
+        self.posy = posy
+        self.size = size
+        self.color = color
+        self.angle = angle
+        self.speed = speed
+        self.life = life
+
+    def draw(self,win):
+        pygame.draw.circle(win, self.color, (self.posx, self.posy), self.size)
+
+
+bullets = []
+objeccts = []
+while run:
+#Field
+    win.fill((0, 0, 0))
+    pygame.time.delay(30)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+    keys = pygame.key.get_pressed()
+    pygame.draw.rect(win, color_BGt, (0, 0, width, Topfield))
+    pygame.draw.rect(win, color_BGb, (0, PosBottomfield, width, Bottomfield))
+    text_end = fontb.render('Press END to stop', True, color_T1)
+    text = fontb.render('Press END to stop', True, color_T1,)
+    textRect = text.get_rect()
+    textRect.center = (width -200 , 20)
+    win.blit(text_end,textRect)
+# Player1
+
+    if playsession == False:
+        text_start = fontA.render('Press W to start', True, color_T1)
+        text = fontA.render('Press W to start', True, color_T1,)
+        textRect = text.get_rect()
+        textRect.center = (width / 2, Topfield / 2)
+        win.blit(text_start,textRect)
+        if keys[pygame.K_w]:
+            P1 = True
+            playsession = True
+            uitleg = True
+            Player1 = Player(1, S_posP1x, S_posP1y, A_x_base, A_y_base, color_P1, size)
+    if P1:
+        pygame.draw.rect(win, Player1.color,(Player1.posx, Player1.posy, Player1.sizex, Player1.sizey))
+
+    #movement
+    if playsession:
+        if Player1.posy >= jumplimitP1:
+            if keys[pygame.K_w] and Player1.fall == False:
+                Player1.Ay += startdistance
+                Player1.jumpsession = True
+        if keys[pygame.K_w] == False and Player1.jumpsession:
+            Player1.fall = True
+        if Player1.jumpsession:
+            Player1.Ay -= 2
+
+        if Player1.jumpsession == False:
+            walkp1 = True
+        else:
+            walkp1 = False
+
+        if keys[pygame.K_a] and Player1.posx > 0 and walkp1:
+            Player1.Ax += -8
+        if keys[pygame.K_d] and Player1.posx < width-size and walkp1:
+            Player1.Ax += 8
+
+        if walkp1:
+            if Player1.Ax < -2:
+                Player1.Ax += 3
+            if Player1.Ax < -maxspeedP1:
+                Player1.Ax = -maxspeedP1
+            if Player1.Ax > 2:
+                Player1.Ax -= 3
+            if Player1.Ax > maxspeedP1:
+                Player1.Ax = maxspeedP1
+            if Player1.Ax != 0 and Player1.Ax < 3 and Player1.Ax >-3:
+                Player1.Ax = 0
+        else:
+            if Player1.Ax < 0:
+                Player1.Ax += 0.20
+            if Player1.Ax > 0:
+                Player1.Ax -= 0.20
+
+        Player1.move(int(Player1.Ax), -Player1.Ay)
+        if Player1.posy > height - size:
+            Player1.Ay = 0
+            Player1.posy = height - size
+            Player1.jumpsession = False
+            Player1.fall = False
+        if Player1.posx > width - size:
+            Player1.posx = width - size
+            Player1.Ax = 0
+        if Player1.posx < 0:
+            Player1.posx = 0
+            Player1.Ax = 0
+        if b_p1_count < 10:
+            if random.randint(0,30) == 10:
+                b_p1_count += 1
+
+#bullets
+        for bullet in bullets:
+            if bullet.life > 0:
+                bullet.posy -= bullet.speed
+                bullet.posx += bullet.angle
+                bullet.life -= 1
+                bullet.draw(win)
+            else:
+                bullets.pop(bullets.index(bullet))
+
+        if keys[pygame.K_SPACE]:
+            if b_p1_count >= 1 and shotsession_p1 == False:
+                b_p1_speed = b_speed + Player1.Ay
+                if b_p1_speed < 1:
+                    b_p1_speed = 1
+                b_p1_angle = Player1.Ax / 2
+                shotsession_p1 = True
+                bullets.append(projectile(round(Player1.posx + Player1.sizex / 2), Player1.posy, b_p1_size, color_P1_b, b_p1_angle, b_p1_speed, b_p1_rangee))
+        else:
+            shotsession_p1 = False
+
+        if uitleg == True:
+            text_start = fontA.render('Schiet op rode vlakken om te selecteren', True, color_T1)
+            text = fontA.render('Schiet op rode vlakken om te selecteren', True, color_T1, )
+            textRect = text.get_rect()
+            textRect.center = (width / 2, Topfield / 2)
+            win.blit(text_start, textRect)
+
+            pygame.draw.rect(win, color_red, (10, 10, 30, 30))
+            for bullet in bullets:
+                if bullet.posx > 10 and bullet.posx < 40:
+                    if bullet.posy > 10 and bullet.posy <40:
+                        bullets.pop(bullets.index(bullet))
+                        uitleg = False
+                        menu = True
+
+        if menu == True:
+            varA = Topfield / 2 - 100
+            varB = width / 2 - 150
+            pygame.draw.rect(win, color_red, (varB, varA, 300, 200))
+            text_start = fontA.render('Start!', True, color_T1)
+            text = fontA.render('Start!', True, color_T1, color_red)
+            textRect = text.get_rect()
+            textRect.center = (width / 2, Topfield / 2)
+            win.blit(text_start, textRect)
+            for bullet in bullets:
+                if bullet.posx > varB and bullet.posx < varB + 300:
+                    if bullet.posy > varA and bullet.posy < varA + 200:
+                        bullets.pop(bullets.index(bullet))
+                        menu = False
+                        game = True
+
+    # Blocks
+
+        if game == True:
+            if random.randint(0,60) == 50:
+                random1 = random.randint(20, 60)
+                random2 = random.randint(5, width - random1)
+                random3 = random.randint(10, 20)
+                pygame.draw.rect(win, color_red, (random2, 1, random1, random3))
+
+    # hits
+
+    if keys[pygame.K_END]:
+        run = False
+    pygame.display.update()
+pygame.quit()
+exit()
+
+# score
